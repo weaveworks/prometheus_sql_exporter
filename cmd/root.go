@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 )
 
 const (
@@ -23,25 +22,25 @@ const (
 	databaseSourceParam = "dbsource"
 	listenParam         = "listen"
 	queriesParam        = "queries"
-	namespaceParam      = "promnamespace"
-	subsystemParam      = "promsubsystem"
-	nameParam           = "promname"
 
 	// Defaults
 	defaultServerPort     string = ":80"
 	defaultDatabaseSource string = ""
 	defaultQueries        string = "queries.yaml"
-	defaultNamespace      string = "flux"
-	defaultSubsystem      string = "jobs"
-	defaultName           string = "db_status_count"
-
-	LabelName = "name"
 )
 
-// Represents the names and queries that the user wants to perform on the database
-type queries struct {
-	Queries []struct {
-		Name  string
+// Represent the prometheus metric types and the queries to be performed
+type proseConfig struct {
+	Gauges []Gauge
+}
+
+type Gauge struct {
+	Namespace string
+	Subsystem string
+	Name string
+	Label string
+	Queries []struct{
+		Name string
 		Query string
 	}
 }
@@ -50,11 +49,7 @@ func init() {
 	RootCmd.AddCommand(VersionCmd)
 	bindLocalFlag(RootCmd, databaseSourceParam, defaultDatabaseSource, `Database source name; includes the DB driver as the scheme. The default is a temporary, file-based DB`)
 	bindLocalFlag(RootCmd, listenParam, defaultServerPort, `Listen address for API clients`)
-	bindLocalFlag(RootCmd, queriesParam, defaultQueries, `Yaml file with list of queries to perform`)
-	bindLocalFlag(RootCmd, namespaceParam, defaultNamespace, `Namespace for the prometheus variable`)
-	bindLocalFlag(RootCmd, subsystemParam, defaultSubsystem, `Subsystem for the namespace variable`)
-	bindLocalFlag(RootCmd, nameParam, defaultName, `Name for the prometheus variable`)
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_")) // Replace all dashes with underscores for env vars
+	bindLocalFlag(RootCmd, queriesParam, defaultQueries, `Path to yaml file which describes metrics and queries`)
 	viper.AutomaticEnv() // read in environment variables that match
 }
 
@@ -76,19 +71,18 @@ var RootCmd = &cobra.Command{
 			logger = log.NewContext(logger).With("caller", log.DefaultCaller)
 		}
 
-		// Parse queries
+		// Parse config
 		queryBytes, err := ioutil.ReadFile(viper.GetString(queriesParam))
 		if err != nil {
-			logger.Log("stage", "read queries", "err", err)
+			logger.Log("stage", "read config", "err", err)
 			os.Exit(1)
 		}
-		var queries queries
-		err = yaml.Unmarshal(queryBytes, &queries)
+		var config proseConfig
+		err = yaml.Unmarshal(queryBytes, &config)
 		if err != nil {
-			logger.Log("stage", "read queries", "err", err)
+			logger.Log("stage", "read config", "err", err)
 			os.Exit(1)
 		}
-		logger.Log("stage", "read queries", "queries", fmt.Sprintf("%v", len(queries.Queries)))
 
 		var dbDriver string
 		{
@@ -110,13 +104,17 @@ var RootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// Prometheus gauge
-		jobStatus := prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: viper.GetString(namespaceParam),
-			Subsystem: viper.GetString(subsystemParam),
-			Name:      viper.GetString(nameParam),
-			Help:      "Gauge for database count",
-		}, []string{LabelName})
+		// Make gauges
+		gauges := make(map[*prometheus.Gauge]Gauge)
+		for name, pg := range config.Gauges {
+			g := prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+				Namespace: pg.Namespace,
+				Subsystem: pg.Subsystem,
+				Name:      pg.Name,
+				Help:      fmt.Sprintf("Prose Guage for %pg", name),
+			}, []string{pg.Label})
+			gauges[g] = pg
+		}
 
 		// Error channel
 		errc := make(chan error)
@@ -124,19 +122,21 @@ var RootCmd = &cobra.Command{
 		// Query DB and update metrics
 		queryer := func (h http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				logger.Log("stage", "Updating queries")
-				for _, q := range queries.Queries {
-					var count int
-					err = conn.QueryRow(q.Query).Scan(&count)
-					if err != nil {
-						logger.Log("stage", "query", "name", q.Name, "query", q.Query, "err", err)
-						errc <- err
+				for g, pg := range gauges {
+					for _, q := range pg.Queries {
+						var count int
+						err = conn.QueryRow(q.Query).Scan(&count)
+						if err != nil {
+							logger.Log("stage", "query", "name", q.Name, "query", q.Query, "err", err)
+							errc <- err
+						}
+						logger.Log("stage", "query", "name", q.Name, "result", fmt.Sprintf("%v", count))
+						g.With(
+							pg.Label, q.Name,
+						).Set(float64(count))
 					}
-					logger.Log("stage", "query", "name", q.Name, "result", fmt.Sprintf("%v", count))
-					jobStatus.With(
-						LabelName, q.Name,
-					).Set(float64(count))
 				}
+
 				h.ServeHTTP(w, r)
 			})
 		}

@@ -56,14 +56,20 @@ metadata:
   name: prose-config
 data:
   queries.yaml: |
-    queries:
-    - name: "scheduled"
-      query: "SELECT count(1) FROM jobs WHERE scheduled_at > CURRENT_TIMESTAMP"
-    - name: "available"
-      query: "SELECT count(1) FROM jobs WHERE claimed_at IS NULL AND scheduled_at < CURRENT_TIMESTAMP"
-    - name: "active"
-      query: "SELECT count(1) FROM jobs WHERE claimed_at IS NOT NULL AND finished_at IS NULL AND heartbeat_at < CURRENT_TIMESTAMP - INTERVAL '30 min'"
-    - name: "abandoned"
-      query: "SELECT count(1) FROM jobs WHERE claimed_at IS NOT NULL AND finished_at IS NULL AND heartbeat_at > CURRENT_TIMESTAMP - INTERVAL '30 min'"
-    - name: "finished"
-      query: "SELECT count(1) FROM jobs WHERE finished_at IS NOT NULL"
+    gauges:
+    - gauge:
+      namespace: "flux"
+      subsystem: "jobs"
+      name: "states"
+      label: "state"
+      queries:
+      - name: "scheduled"
+        query: "SELECT count(1) FROM jobs WHERE scheduled_at > CURRENT_TIMESTAMP"
+      - name: "available"
+        query: "SELECT count(1) FROM jobs WHERE claimed_at IS NULL AND scheduled_at < CURRENT_TIMESTAMP"
+      - name: "active"
+        query: "SELECT count(1) FROM jobs WHERE claimed_at IS NOT NULL AND finished_at IS NULL AND heartbeat_at < CURRENT_TIMESTAMP - INTERVAL '30 min'"
+      - name: "abandoned"
+        query: "SELECT count(1) FROM jobs WHERE claimed_at IS NOT NULL AND finished_at IS NULL AND heartbeat_at > CURRENT_TIMESTAMP - INTERVAL '30 min'"
+      - name: "finished"
+        query: "SELECT count(1) FROM jobs WHERE finished_at IS NOT NULL"
