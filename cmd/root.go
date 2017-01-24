@@ -1,20 +1,17 @@
 package cmd
 
 import (
-	"database/sql"
 	_ "github.com/lib/pq" // For postgres/AWS RDS support. URLs prefixed with "postgres://"
 	"fmt"
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/metrics/prometheus"
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
+	"github.com/weaveworks/prometheus_sql_exporter/db"
+	"github.com/weaveworks/prometheus_sql_exporter/querying"
+	"github.com/weaveworks/prometheus_sql_exporter/config"
 )
 
 const (
@@ -28,22 +25,6 @@ const (
 	defaultDatabaseSource string = ""
 	defaultQueries        string = "queries.yaml"
 )
-
-// Represent the prometheus metric types and the queries to be performed
-type proseConfig struct {
-	Gauges []Gauge
-}
-
-type Gauge struct {
-	Namespace string
-	Subsystem string
-	Name string
-	Label string
-	Queries []struct{
-		Name string
-		Query string
-	}
-}
 
 func init() {
 	RootCmd.AddCommand(VersionCmd)
@@ -71,81 +52,49 @@ var RootCmd = &cobra.Command{
 			logger = log.NewContext(logger).With("caller", log.DefaultCaller)
 		}
 
-		// Parse config
-		queryBytes, err := ioutil.ReadFile(viper.GetString(queriesParam))
-		if err != nil {
-			logger.Log("stage", "read config", "err", err)
-			os.Exit(1)
-		}
-		var config proseConfig
-		err = yaml.Unmarshal(queryBytes, &config)
-		if err != nil {
-			logger.Log("stage", "read config", "err", err)
-			os.Exit(1)
-		}
-
-		var dbDriver string
-		{
-			var version uint64
-			u, err := url.Parse(viper.GetString(databaseSourceParam))
-			if err != nil {
-				logger.Log("stage", "db init", "err", err)
-				os.Exit(1)
-			}
-			logger.Log("stage", "db init", "url", u, "scheme", u.Scheme)
-			dbDriver = u.Scheme
-			logger.Log("stage", "db init", "driver", dbDriver, "db-version", fmt.Sprintf("%d", version))
-		}
-
-		// Connect to Job store.
-		conn, err := sql.Open(dbDriver, viper.GetString(databaseSourceParam))
+		repository, err := db.NewRepository(db.RepositoryConfig{
+			DatabaseUrl: viper.GetString(databaseSourceParam),
+			Logger: log.NewContext(logger).With("domain", "db"),
+		})
 		if err != nil {
 			logger.Log("stage", "db init", "err", err)
 			os.Exit(1)
 		}
 
-		// Make gauges
-		gauges := make(map[*prometheus.Gauge]Gauge)
-		for name, pg := range config.Gauges {
-			g := prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-				Namespace: pg.Namespace,
-				Subsystem: pg.Subsystem,
-				Name:      pg.Name,
-				Help:      fmt.Sprintf("Prose Guage for %pg", name),
-			}, []string{pg.Label})
-			gauges[g] = pg
+		// Create querying service
+		qSvc, err := querying.NewService()
+		if err != nil {
+			logger.Log("stage", "query svc init", "err", err)
+			os.Exit(1)
+		}
+
+		// Register queries and gauges
+		cfg, err := config.NewProseConfiguration(viper.GetString(queriesParam))
+		if err != nil {
+			logger.Log("stage", "configuration", "err", err)
+			os.Exit(1)
+		}
+		cfg.RegisterGauges(repository, qSvc)
+		if err != nil {
+			logger.Log("stage", "register gauges", "err", err)
+			os.Exit(1)
 		}
 
 		// Error channel
 		errc := make(chan error)
 
-		// Query DB and update metrics
-		queryer := func (h http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				for g, pg := range gauges {
-					for _, q := range pg.Queries {
-						var count int
-						err = conn.QueryRow(q.Query).Scan(&count)
-						if err != nil {
-							logger.Log("stage", "query", "name", q.Name, "query", q.Query, "err", err)
-							errc <- err
-						}
-						logger.Log("stage", "query", "name", q.Name, "result", fmt.Sprintf("%v", count))
-						g.With(
-							pg.Label, q.Name,
-						).Set(float64(count))
-					}
-				}
-
-				h.ServeHTTP(w, r)
-			})
+		// IntQuery DB and update metrics
+		var httpMiddleware http.Handler
+		{
+			httpMiddleware = promhttp.Handler()
+			httpMiddleware = qSvc.Handler(httpMiddleware)
 		}
 
 		// Start prometheus metrics endpoint
 		go func() {
 			logger.Log("stage", "httpserver", "addr", viper.GetString(listenParam))
 			mux := http.NewServeMux()
-			mux.Handle("/metrics", queryer(promhttp.Handler()))
+			mux.Handle("/metrics", httpMiddleware)
 			errc <- http.ListenAndServe(viper.GetString(listenParam), mux)
 		}()
 
