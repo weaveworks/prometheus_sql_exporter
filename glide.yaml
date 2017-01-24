@@ -1,0 +1,16 @@
+package: github.com/weaveworks/prometheus_sql_exporter
+import:
+- package: github.com/go-kit/kit
+  version: ~0.3.0
+  subpackages:
+  - log
+  - metrics/prometheus
+- package: github.com/lib/pq
+- package: github.com/prometheus/client_golang
+  version: ~0.8.0
+  subpackages:
+  - prometheus
+  - prometheus/promhttp
+- package: github.com/spf13/cobra
+- package: github.com/spf13/viper
+- package: gopkg.in/yaml.v2

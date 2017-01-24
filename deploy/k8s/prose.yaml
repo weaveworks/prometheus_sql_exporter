@@ -1,0 +1,69 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: prose
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: prose
+    spec:
+      containers:
+      - name: prose
+        image: quay.io/weaveworks/prose:test
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: QUERIES
+          value: "/etc/config/queries.yaml"
+        - name: DBSOURCE
+          value: "postgres://user:password@flux-db.default.svc.cluster.local:5432/flux?sslmode=disable"
+        - name: LISTEN
+          value: ":80"
+        - name: PROMNAME
+          value: "db_status_count"
+        - name: PROMNAMESPACE
+          value: "flux"
+        - name: PROMSUBSYSTEM
+          value: "jobs"
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prose-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prose
+  annotations:
+    prometheus.io/scrape: 'true'
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+  selector:
+    name: prose
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: prose-config
+data:
+  queries.yaml: |
+    queries:
+    - name: "scheduled"
+      query: "SELECT count(1) FROM jobs WHERE scheduled_at > CURRENT_TIMESTAMP"
+    - name: "available"
+      query: "SELECT count(1) FROM jobs WHERE claimed_at IS NULL AND scheduled_at < CURRENT_TIMESTAMP"
+    - name: "active"
+      query: "SELECT count(1) FROM jobs WHERE claimed_at IS NOT NULL AND finished_at IS NULL AND heartbeat_at < CURRENT_TIMESTAMP - INTERVAL '30 min'"
+    - name: "abandoned"
+      query: "SELECT count(1) FROM jobs WHERE claimed_at IS NOT NULL AND finished_at IS NULL AND heartbeat_at > CURRENT_TIMESTAMP - INTERVAL '30 min'"
+    - name: "finished"
+      query: "SELECT count(1) FROM jobs WHERE finished_at IS NOT NULL"
