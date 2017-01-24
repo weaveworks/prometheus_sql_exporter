@@ -11,9 +11,9 @@ DOCKER?=docker
 #  `make -W $PWD/registry/registry.go`
 godeps=$(shell go list -f '{{join .Deps "\n"}}' $1 | grep -v /vendor/ | xargs go list -f '{{if not .Standard}}{{ $$dep := . }}{{range .GoFiles}}{{$$dep.Dir}}/{{.}} {{end}}{{end}}')
 
-PROSE_DEPS:=$(call godeps,.)
+PROMETHEUS_SQL_EXPORTER_DEPS:=$(call godeps,.)
 
-all: build/.prose.done
+all: build/.prometheus_sql_exporter.done
 
 clean:
 	go clean
@@ -29,10 +29,10 @@ build/.%.done: docker/Dockerfile.%
 	${DOCKER} tag ${HOST}/${NAMESPACE}/$* ${HOST}/${NAMESPACE}/$*:test
 	touch $@
 
-build/.prose.done: build/prose
+build/.prometheus_sql_exporter.done: build/prometheus_sql_exporter
 
-build/prose: $(PROSE_DEPS)
-build/prose: main.go
+build/prometheus_sql_exporter: $(PROMETHEUS_SQL_EXPORTER_DEPS)
+build/prometheus_sql_exporter: main.go
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $@ $(LDFLAGS) -ldflags "-X main.version=$(shell ./docker/image-tag)" main.go
 
 deps:

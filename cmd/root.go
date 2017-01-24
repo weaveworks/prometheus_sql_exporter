@@ -1,17 +1,19 @@
 package cmd
 
 import (
-	_ "github.com/lib/pq" // For postgres/AWS RDS support. URLs prefixed with "postgres://"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/go-kit/kit/log"
+	_ "github.com/lib/pq" // For postgres/AWS RDS support. URLs prefixed with "postgres://"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"net/http"
-	"os"
+
+	"github.com/weaveworks/prometheus_sql_exporter/config"
 	"github.com/weaveworks/prometheus_sql_exporter/db"
 	"github.com/weaveworks/prometheus_sql_exporter/querying"
-	"github.com/weaveworks/prometheus_sql_exporter/config"
 )
 
 const (
@@ -54,7 +56,7 @@ var RootCmd = &cobra.Command{
 
 		repository, err := db.NewRepository(db.RepositoryConfig{
 			DatabaseUrl: viper.GetString(databaseSourceParam),
-			Logger: log.NewContext(logger).With("domain", "db"),
+			Logger:      log.NewContext(logger).With("domain", "db"),
 		})
 		if err != nil {
 			logger.Log("stage", "db init", "err", err)
@@ -69,7 +71,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		// Register queries and gauges
-		cfg, err := config.NewProseConfiguration(viper.GetString(queriesParam))
+		cfg, err := config.NewConfiguration(viper.GetString(queriesParam))
 		if err != nil {
 			logger.Log("stage", "configuration", "err", err)
 			os.Exit(1)

@@ -5,23 +5,22 @@ type NamedGauge interface {
 }
 
 type NamedGaugeConfig struct {
-	Gauge ProseGauge
-	Name string
+	Gauge Gauge
+	Name  string
 }
 
 func NewNamedGauge(c NamedGaugeConfig) (NamedGauge, error) {
 	return &namedGauge{
 		pg: c.Gauge,
-		n: c.Name,
+		n:  c.Name,
 	}, nil
 }
 
 type namedGauge struct {
-	pg ProseGauge
+	pg Gauge
 	n  string
 }
 
 func (g *namedGauge) Update(val int) {
 	g.pg.UpdateInt(g.n, val)
 }
-
