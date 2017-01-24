@@ -1,0 +1,4 @@
+FROM alpine:3.3
+WORKDIR /home/prometheus_sql_exporter
+COPY ./prometheus_sql_exporter /usr/local/bin/
+ENTRYPOINT [ "prometheus_sql_exporter" ]

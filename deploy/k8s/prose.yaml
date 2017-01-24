@@ -1,17 +1,17 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: prose
+  name: prometheus_sql_exporter
 spec:
   replicas: 1
   template:
     metadata:
       labels:
-        name: prose
+        name: prometheus_sql_exporter
     spec:
       containers:
-      - name: prose
-        image: quay.io/weaveworks/prose:test
+      - name: prometheus_sql_exporter
+        image: quay.io/weaveworks/prometheus_sql_exporter:test
         imagePullPolicy: IfNotPresent
         env:
         - name: QUERIES
@@ -34,12 +34,12 @@ spec:
       volumes:
         - name: config-volume
           configMap:
-            name: prose-config
+            name: prometheus-sql-exporter-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: prose
+  name: prometheus_sql_exporter
   annotations:
     prometheus.io/scrape: 'true'
 spec:
@@ -47,13 +47,13 @@ spec:
   ports:
     - port: 80
   selector:
-    name: prose
+    name: prometheus_sql_exporter
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   creationTimestamp: null
-  name: prose-config
+  name: prometheus-sql-exporter-config
 data:
   queries.yaml: |
     gauges:

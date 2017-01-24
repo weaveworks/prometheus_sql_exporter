@@ -1,33 +1,33 @@
 package config
 
 import (
-	"github.com/weaveworks/prometheus_sql_exporter/monitoring"
-	"io/ioutil"
-	"gopkg.in/yaml.v2"
-	"github.com/weaveworks/prometheus_sql_exporter/querying"
 	"github.com/weaveworks/prometheus_sql_exporter/db"
+	"github.com/weaveworks/prometheus_sql_exporter/monitoring"
+	"github.com/weaveworks/prometheus_sql_exporter/querying"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 )
 
 // Represent the prometheus metric types and the queries to be performed
-type proseConfig struct {
+type Config struct {
 	Gauges []Gauge
 }
 type Gauge struct {
-	monitoring.ProseGaugeConfig `yaml:",inline"`
-	Queries []Query
+	monitoring.GaugeConfig `yaml:",inline"`
+	Queries                []Query
 }
 
-type Query struct{
-	Name string
+type Query struct {
+	Name  string
 	Query string
 }
 
-type ProseConfiguration interface {
+type Configuration interface {
 	RegisterGauges(repo db.Repository, svc querying.Service) error
 }
 
-func NewProseConfiguration(configPath string) (ProseConfiguration, error) {
-	var cfg proseConfig
+func NewConfiguration(configPath string) (Configuration, error) {
+	var cfg Config
 	queryBytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return &cfg, err
@@ -39,9 +39,9 @@ func NewProseConfiguration(configPath string) (ProseConfiguration, error) {
 	return &cfg, err
 }
 
-func (c *proseConfig) RegisterGauges(repo db.Repository, svc querying.Service) (error) {
+func (c *Config) RegisterGauges(repo db.Repository, svc querying.Service) error {
 	for _, pg := range c.Gauges {
-		gauge, err := monitoring.NewProseGauge(pg.ProseGaugeConfig)
+		gauge, err := monitoring.NewGauge(pg.GaugeConfig)
 		if err != nil {
 			return err
 		}
@@ -49,14 +49,14 @@ func (c *proseConfig) RegisterGauges(repo db.Repository, svc querying.Service) (
 		for _, q := range pg.Queries {
 			query, err := db.NewIntQuery(db.QueryConfig{
 				Repository: repo,
-				Query: q.Query,
+				Query:      q.Query,
 			})
 			if err != nil {
 				return err
 			}
 			ng, err := monitoring.NewNamedGauge(monitoring.NamedGaugeConfig{
 				Gauge: gauge,
-				Name: q.Name,
+				Name:  q.Name,
 			})
 			if err != nil {
 				return err

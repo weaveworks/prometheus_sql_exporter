@@ -6,32 +6,32 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-type ProseGauge interface {
+type Gauge interface {
 	UpdateInt(name string, i int)
 }
 
 type gauge struct {
 	pg *prometheus.Gauge
-	l string
+	l  string
 }
 
-type ProseGaugeConfig struct {
+type GaugeConfig struct {
 	Namespace string
 	Subsystem string
-	Name string
-	Label string
+	Name      string
+	Label     string
 }
 
-func NewProseGauge(c ProseGaugeConfig) (ProseGauge, error) {
+func NewGauge(c GaugeConfig) (Gauge, error) {
 	g := prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 		Namespace: c.Namespace,
 		Subsystem: c.Subsystem,
 		Name:      c.Name,
-		Help:      fmt.Sprintf("Prose Guage for %v", c.Name),
+		Help:      fmt.Sprintf("Gauge for %v", c.Name),
 	}, []string{c.Label})
 	return &gauge{
 		pg: g,
-		l: c.Label,
+		l:  c.Label,
 	}, nil
 }
 
