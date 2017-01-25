@@ -1,5 +1,5 @@
-hash: cc7f19e128650c2b4a0e950932b6439192c99633bc27039a1e91a608bd55d087
-updated: 2017-01-24T10:25:41.061080802Z
+hash: de645cbbcacc38431e29ef5614c73cd2cde0bc476d6825fb8571f092c80e9ac7
+updated: 2017-01-25T10:38:30.672254397Z
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -56,7 +56,7 @@ imports:
 - name: github.com/pelletier/go-toml
   version: 45932ad32dfdd20826f5671da37a5f3ce9f26a8d
 - name: github.com/pkg/errors
-  version: a22138067af1c4942683050411a841ade67fe1eb
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pkg/sftp
   version: 8197a2e580736b78d704be0fc47b2324c0591a32
 - name: github.com/prometheus/client_golang
@@ -109,4 +109,6 @@ imports:
   - unicode/norm
 - name: gopkg.in/yaml.v2
   version: a5b47d31c556af34a302ce5d659e6fea44d90de0
-testImports: []
+testImports:
+- name: gopkg.in/DATA-DOG/go-sqlmock.v1
+  version: d4cd2ca2ad1cc2130bba385aab072218f131f636

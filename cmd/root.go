@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	_ "github.com/lib/pq" // For postgres/AWS RDS support. URLs prefixed with "postgres://"
 	"fmt"
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -40,7 +39,7 @@ func bindLocalFlag(c *cobra.Command, name string, value string, help string) {
 }
 
 var RootCmd = &cobra.Command{
-	Use:   "fluxmon",
+	Use:   "prose",
 	Short: "Monitor a database and expose metrics for prometheus",
 	Long:  `This service will monitor a database for specified queries and expose them to prometheus`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -52,14 +51,13 @@ var RootCmd = &cobra.Command{
 			logger = log.NewContext(logger).With("caller", log.DefaultCaller)
 		}
 
-		repository, err := db.NewRepository(db.RepositoryConfig{
-			DatabaseUrl: viper.GetString(databaseSourceParam),
-			Logger: log.NewContext(logger).With("domain", "db"),
-		})
+		// Create database connection and repository
+		database, err := db.NewDatabase(viper.GetString(databaseSourceParam))
 		if err != nil {
 			logger.Log("stage", "db init", "err", err)
 			os.Exit(1)
 		}
+		repository := db.NewRepository(database)
 
 		// Create querying service
 		qSvc, err := querying.NewService()

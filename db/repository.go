@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"net/url"
-	"github.com/go-kit/kit/log"
+	_ "github.com/lib/pq" // For postgres/AWS RDS support. URLs prefixed with "postgres://"
 )
 
 type Repository interface {
@@ -12,32 +12,12 @@ type Repository interface {
 
 type repository struct {
 	db *sql.DB
-	Logger log.Logger
 }
 
-type RepositoryConfig struct {
-	DatabaseUrl string
-	Logger log.Logger
-}
-
-func NewRepository(c RepositoryConfig) (r Repository, err error) {
-	u, err := url.Parse(c.DatabaseUrl)
-	if err != nil {
-		c.Logger.Log("err", err)
-		return
+func NewRepository(DB *sql.DB) Repository {
+	return &repository{
+		db: DB,
 	}
-	c.Logger.Log("url", u, "scheme", u.Scheme)
-	driver := u.Scheme
-
-	conn, err := sql.Open(driver, c.DatabaseUrl)
-	if err != nil {
-		c.Logger.Log("err", err)
-		return
-	}
-	r = &repository{
-		db: conn,
-	}
-	return
 }
 
 func (r *repository) QueryInt(q string) (count int, err error) {
@@ -45,6 +25,16 @@ func (r *repository) QueryInt(q string) (count int, err error) {
 	if err != nil {
 		return
 	}
+	return
+}
+
+func NewDatabase(databaseURL string) (conn *sql.DB, err error) {
+	u, err := url.Parse(databaseURL)
+	if err != nil {
+		return
+	}
+	driver := u.Scheme
+	conn, err = sql.Open(driver, databaseURL)
 	return
 }
 
