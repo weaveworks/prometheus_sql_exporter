@@ -1,5 +1,5 @@
 .DEFAULT: all
-.PHONY: all clean realclean deps integration
+.PHONY: all clean realclean deps integration build test
 
 HOST=quay.io
 NAMESPACE=weaveworks
@@ -13,7 +13,7 @@ godeps=$(shell go list -f '{{join .Deps "\n"}}' $1 | grep -v /vendor/ | xargs go
 
 PROSE_DEPS:=$(call godeps,.)
 
-all: build/.prose.done
+all: build/.prometheus_sql_exporter.done
 
 clean:
 	go clean
@@ -25,22 +25,35 @@ realclean: clean
 build/.%.done: docker/Dockerfile.%
 	mkdir -p ./build/docker/$*
 	cp $^ ./build/docker/$*/
-	${DOCKER} build -t ${HOST}/${NAMESPACE}/$* -f build/docker/$*/Dockerfile.$* ./build/docker/$*
-	${DOCKER} tag ${HOST}/${NAMESPACE}/$* ${HOST}/${NAMESPACE}/$*:test
+	${DOCKER} build -t ${HOST}/${NAMESPACE}/$*:$(shell ./docker/image-tag) -f build/docker/$*/Dockerfile.$* ./build/docker/$*
+	${DOCKER} images
 	touch $@
 
-build/.prose.done: build/prose
+build/.prometheus_sql_exporter.done: build/prose
 
 build/prose: $(PROSE_DEPS)
 build/prose: main.go
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $@ $(LDFLAGS) -ldflags "-X main.version=$(shell ./docker/image-tag)" main.go
 
-deps:
-	if [ -z $(shell which glide) ] ; then curl https://glide.sh/get | sh ; fi
-	glide i
+## Build lifecycle helpers
 
-integration: mocks/Dockerfile.integration-db
-	${DOCKER} build -t test-db -f ./mocks/Dockerfile.integration-db ./mocks
-	${DOCKER} run -d -p 5432:5432 --name integration-db test-db
-	go test -v -race -tags integration -timeout 30s $(shell glide novendor) || { echo "Integration tests failed" >&2; ${DOCKER} rm -f integration-db ; exit 1; }
-	${DOCKER} rm -f integration-db
+deps:
+	go get github.com/Masterminds/glide
+	glide i --force
+
+build: build/prose
+
+test:
+	go test -v -race $(shell glide novendor)
+
+integration: build/.mocks.done
+	${DOCKER} run -d -p 15432:5432 --name integration-db integration-db
+	until docker logs integration-db 2>1 | grep "PostgreSQL init process complete;" ; do sleep 1 ; done
+	go test -v -race -tags integration -timeout 30s $(shell glide novendor) || { echo "Integration tests failed" >&2; if [ -z ${CI} ] ; then ${DOCKER} rm -f integration-db ; fi ; exit 1; }
+	if [ -z ${CI} ] ; then ${DOCKER} rm -f integration-db ; fi ;
+
+build/.mocks.done: ./mocks/Dockerfile.integration-db
+	mkdir -p build
+	${DOCKER} build -t integration-db -f $^ ./mocks
+	touch $@
+

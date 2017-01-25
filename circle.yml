@@ -5,41 +5,28 @@ machine:
     PATH: "/usr/local/go/bin:${HOME}/bin:${PATH}"
     GOROOT: ""
     GOPATH: "${HOME}"
-    GODIST: "go1.7.1.linux-amd64.tar.gz"
 
 checkout:
   post:
-    - mkdir -p download
-    - test -e download/$GODIST || curl -o download/$GODIST https://storage.googleapis.com/golang/$GODIST
-    - sudo rm -rf /usr/local/go
-    - sudo tar -C /usr/local -xzf download/$GODIST
-    - mkdir -p ${GOPATH}/src/github.com/weaveworks
-    - mv ${HOME}/prometheus_sql_exporter ${GOPATH}/src/github.com/weaveworks/
-    - ln -s ${GOPATH}/src/github.com/weaveworks/prometheus_sql_exporter ${HOME}/prometheus_sql_exporter # Circle needs this to be here, apparently
-    - cd ${GOPATH}/src/github.com/weaveworks/prometheus_sql_exporter
+    - mkdir -p ${GOPATH}/src/github.com/$CIRCLE_PROJECT_USERNAME
+    - mv ${HOME}/$CIRCLE_PROJECT_REPONAME ${GOPATH}/src/github.com/$CIRCLE_PROJECT_USERNAME/
+    - ln -s ${GOPATH}/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME ${HOME}/$CIRCLE_PROJECT_REPONAME # Circle needs this to be here, apparently
+    - cd ${GOPATH}/src/github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
 
 dependencies:
   cache_directories:
-    - "~/prometheus_sql_exporter/vendor/github.com"
-    - "~/prometheus_sql_exporter/vendor/gopkg.in"
-    - "~/prometheus_sql_exporter/vendor/golang.org"
-    - "~/download"
+    - "~/$CIRCLE_PROJECT_USERNAME/vendor"
   override:
-    - go get github.com/Masterminds/glide
-    - go get github.com/weaveworks/github-release
-    - glide i
+    - make deps
 
 test:
+  # Add go vet and go lint.
   override:
-    - gnatsd:
-        background: true
-    - go build -v $(glide novendor)
-    - go test -v -race $(glide novendor)
+    - make build
+    - make test
     - make integration
   post:
-    - |
-        cd ${GOPATH}/src/github.com/weaveworks/prometheus_sql_exporter
-        make all
+    - make all
 
 deployment:
   push:

@@ -1,8 +1,8 @@
 package db
 
 import (
-	"testing"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"testing"
 )
 
 func TestRepository_CreatePostgres(t *testing.T) {

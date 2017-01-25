@@ -2,8 +2,8 @@ package db
 
 import (
 	"database/sql"
-	"net/url"
 	_ "github.com/lib/pq" // For postgres/AWS RDS support. URLs prefixed with "postgres://"
+	"net/url"
 )
 
 type Repository interface {
@@ -37,4 +37,3 @@ func NewDatabase(databaseURL string) (conn *sql.DB, err error) {
 	conn, err = sql.Open(driver, databaseURL)
 	return
 }
-

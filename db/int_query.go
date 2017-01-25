@@ -16,7 +16,7 @@ type QueryConfig struct {
 
 func NewIntQuery(c QueryConfig) (IntQuery, error) {
 	return &query{
-		q: c.Query,
+		q:  c.Query,
 		db: c.Repository,
 	}, nil
 }

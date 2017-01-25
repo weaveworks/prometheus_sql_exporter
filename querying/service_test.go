@@ -1,15 +1,15 @@
 package querying
 
 import (
-	"testing"
+	"errors"
 	"net/http"
 	"net/http/httptest"
-	"errors"
+	"testing"
 )
 
 var (
 	testSvc, _ = NewService()
-	query1 = &mockQuery{
+	query1     = &mockQuery{
 		res: 1,
 	}
 	query2 = &mockQuery{
@@ -76,4 +76,3 @@ type mockQuery struct {
 func (q *mockQuery) Query() (int, error) {
 	return q.res, q.err
 }
-

@@ -1,18 +1,18 @@
 package monitoring
 
 import (
-	"testing"
-	"net/http/httptest"
-	"net/http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"testing"
 )
 
 func TestGauge_UpdateInt(t *testing.T) {
 	cfg := ProseGaugeConfig{
-		Name: "name",
-		Label: "label",
+		Name:      "name",
+		Label:     "label",
 		Namespace: "namespace",
 		Subsystem: "subsystem",
 	}

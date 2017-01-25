@@ -12,14 +12,14 @@ type ProseGauge interface {
 
 type gauge struct {
 	pg *prometheus.Gauge
-	l string
+	l  string
 }
 
 type ProseGaugeConfig struct {
 	Namespace string
 	Subsystem string
-	Name string
-	Label string
+	Name      string
+	Label     string
 }
 
 func NewProseGauge(c ProseGaugeConfig) (ProseGauge, error) {
@@ -31,7 +31,7 @@ func NewProseGauge(c ProseGaugeConfig) (ProseGauge, error) {
 	}, []string{c.Label})
 	return &gauge{
 		pg: g,
-		l: c.Label,
+		l:  c.Label,
 	}, nil
 }
 

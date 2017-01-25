@@ -45,11 +45,12 @@ func TestIntegration_ShowErrorIfCantConnect(t *testing.T) {
 	}
 }
 
-// This test expects the postgres db, built from /mocks/Dockerfile.integration-db, to be running on localhost:5432
+// This test expects the postgres db, built from /mocks/Dockerfile.integration-db, to be running on localhost:15432
+// We use port 15432 because apparently circle already has something running on 5432
 func TestIntegration_SimpleQuery(t *testing.T) {
 	file := createTestQueryFile("ns")
 	defer os.Remove(file.Name())
-	viper.Set(databaseSourceParam, "postgres://postgres@localhost:5432/test?sslmode=disable")
+	viper.Set(databaseSourceParam, "postgres://postgres@localhost:15432/test?sslmode=disable")
 	viper.Set(queriesParam, pathTo(file))
 	qSvc := wireUpDomain(log.NewLogfmtLogger(os.Stderr))
 
