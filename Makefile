@@ -1,5 +1,5 @@
 .DEFAULT: all
-.PHONY: all clean realclean deps
+.PHONY: all clean realclean deps integration
 
 HOST=quay.io
 NAMESPACE=weaveworks
@@ -38,3 +38,9 @@ build/prose: main.go
 deps:
 	if [ -z $(shell which glide) ] ; then curl https://glide.sh/get | sh ; fi
 	glide i
+
+integration: mocks/Dockerfile.integration-db
+	${DOCKER} build -t test-db -f ./mocks/Dockerfile.integration-db ./mocks
+	${DOCKER} run -d -p 5432:5432 --name integration-db test-db
+	go test -v -race -tags integration -timeout 30s $(shell glide novendor) || { echo "Integration tests failed" >&2; ${DOCKER} rm -f integration-db ; exit 1; }
+	${DOCKER} rm -f integration-db

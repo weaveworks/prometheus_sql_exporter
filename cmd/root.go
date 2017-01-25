@@ -6,11 +6,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"net/http"
-	"os"
+	"github.com/weaveworks/prometheus_sql_exporter/config"
 	"github.com/weaveworks/prometheus_sql_exporter/db"
 	"github.com/weaveworks/prometheus_sql_exporter/querying"
-	"github.com/weaveworks/prometheus_sql_exporter/config"
+	"net/http"
+	"os"
 )
 
 const (
@@ -51,37 +51,11 @@ var RootCmd = &cobra.Command{
 			logger = log.NewContext(logger).With("caller", log.DefaultCaller)
 		}
 
-		// Create database connection and repository
-		database, err := db.NewDatabase(viper.GetString(databaseSourceParam))
-		if err != nil {
-			logger.Log("stage", "db init", "err", err)
-			os.Exit(1)
-		}
-		repository := db.NewRepository(database)
-
-		// Create querying service
-		qSvc, err := querying.NewService()
-		if err != nil {
-			logger.Log("stage", "query svc init", "err", err)
-			os.Exit(1)
-		}
-
-		// Register queries and gauges
-		cfg, err := config.NewProseConfiguration(viper.GetString(queriesParam))
-		if err != nil {
-			logger.Log("stage", "configuration", "err", err)
-			os.Exit(1)
-		}
-		cfg.RegisterGauges(repository, qSvc)
-		if err != nil {
-			logger.Log("stage", "register gauges", "err", err)
-			os.Exit(1)
-		}
+		qSvc := wireUpDomain(logger)
 
 		// Error channel
 		errc := make(chan error)
 
-		// IntQuery DB and update metrics
 		var httpMiddleware http.Handler
 		{
 			httpMiddleware = promhttp.Handler()
@@ -105,4 +79,35 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
+}
+
+func wireUpDomain(logger log.Logger) querying.Service {
+	// Create database connection and repository
+	database, err := db.NewDatabase(viper.GetString(databaseSourceParam))
+	if err != nil {
+		logger.Log("stage", "db init", "err", err)
+		os.Exit(1)
+	}
+	repository := db.NewRepository(database)
+
+	// Create querying service
+	qSvc, err := querying.NewService()
+	if err != nil {
+		logger.Log("stage", "query svc init", "err", err)
+		os.Exit(1)
+	}
+
+	// Register queries and gauges
+	cfg, err := config.NewProseConfiguration(viper.GetString(queriesParam))
+	if err != nil {
+		logger.Log("stage", "configuration", "err", err)
+		os.Exit(1)
+	}
+	cfg.RegisterGauges(repository, qSvc)
+	if err != nil {
+		logger.Log("stage", "register gauges", "err", err)
+		os.Exit(1)
+	}
+
+	return qSvc
 }

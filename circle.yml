@@ -35,7 +35,7 @@ test:
         background: true
     - go build -v $(glide novendor)
     - go test -v -race $(glide novendor)
-#    - go test -v -race -tags integration -timeout 30s $(glide novendor)
+    - make integration
   post:
     - |
         cd ${GOPATH}/src/github.com/weaveworks/prometheus_sql_exporter

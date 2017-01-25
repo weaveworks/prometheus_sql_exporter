@@ -1,0 +1,10 @@
+CREATE DATABASE test WITH ENCODING = 'UTF-8';
+
+\connect test;
+
+CREATE TABLE data (
+  ID INT PRIMARY KEY     NOT NULL,
+  NAME           INT    NOT NULL
+);
+
+INSERT INTO data VALUES (1, 32);

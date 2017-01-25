@@ -39,7 +39,12 @@ func (s *svc) Register(q db.IntQuery, g monitoring.NamedGauge) {
 
 func (s *svc) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.UpdateAll()
+		err := s.UpdateAll()
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte(err.Error()))
+			return
+		}
 		h.ServeHTTP(w, r)
 	})
 }
