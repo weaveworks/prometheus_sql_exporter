@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
       - name: prose
-        image: quay.io/weaveworks/prose
+        image: quay.io/weaveworks/prometheus_sql_exporter
         imagePullPolicy: IfNotPresent
         env:
         - name: QUERIES
