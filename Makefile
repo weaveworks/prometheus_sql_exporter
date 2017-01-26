@@ -27,7 +27,6 @@ build/.%.done: docker/Dockerfile.%
 	cp $^ ./build/docker/$*/
 	${DOCKER} build -t ${HOST}/${NAMESPACE}/$* -f build/docker/$*/Dockerfile.$* ./build/docker/$*
 	${DOCKER} tag ${HOST}/${NAMESPACE}/$* ${HOST}/${NAMESPACE}/$*:$(shell ./docker/image-tag)
-	${DOCKER} images
 	touch $@
 
 build/.prometheus_sql_exporter.done: build/prose

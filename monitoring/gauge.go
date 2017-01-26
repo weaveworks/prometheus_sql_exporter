@@ -30,7 +30,7 @@ func NewProseGauge(c ProseGaugeConfig) (ProseGauge, error) {
 		Namespace: c.Namespace,
 		Subsystem: c.Subsystem,
 		Name:      c.Name,
-		Help:      fmt.Sprintf("Prose Guage for %v", c.Name),
+		Help:      fmt.Sprintf("Prose Gauge for %v", c.Name),
 	}, []string{c.Label})
 	return &gauge{
 		pg: g,

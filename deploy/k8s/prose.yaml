@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
       - name: prose
-        image: quay.io/weaveworks/prose:test
+        image: quay.io/weaveworks/prose
         imagePullPolicy: IfNotPresent
         env:
         - name: QUERIES
@@ -20,12 +20,6 @@ spec:
           value: "postgres://user:password@flux-db.default.svc.cluster.local:5432/flux?sslmode=disable"
         - name: LISTEN
           value: ":80"
-        - name: PROMNAME
-          value: "db_status_count"
-        - name: PROMNAMESPACE
-          value: "flux"
-        - name: PROMSUBSYSTEM
-          value: "jobs"
         ports:
         - containerPort: 80
         volumeMounts:

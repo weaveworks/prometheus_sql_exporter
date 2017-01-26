@@ -27,7 +27,7 @@ const (
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
-	bindLocalFlag(rootCmd, databaseSourceParam, defaultDatabaseSource, `Database source name; includes the DB driver as the scheme. The default is a temporary, file-based DB`)
+	bindLocalFlag(rootCmd, databaseSourceParam, defaultDatabaseSource, `Database source name; includes the DB driver as the scheme. E.g. postgres://user:password@localhost:5432/database?sslmode=disable`)
 	bindLocalFlag(rootCmd, listenParam, defaultServerPort, `Listen address for API clients`)
 	bindLocalFlag(rootCmd, queriesParam, defaultQueries, `Path to yaml file which describes metrics and queries`)
 	viper.AutomaticEnv() // read in environment variables that match
