@@ -8,7 +8,7 @@ import (
 
 var version string
 
-var VersionCmd = &cobra.Command{
+var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Output the version of prose",
 	RunE: func(_ *cobra.Command, args []string) error {

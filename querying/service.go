@@ -6,12 +6,15 @@ import (
 	"net/http"
 )
 
+// Service - Registers queries against gauges
+// Once registered a HTTP handler middleware is exposed to update all query/gauge tuples.
 type Service interface {
 	Register(q db.IntQuery, g monitoring.NamedGauge)
 	UpdateAll() error
 	Handler(h http.Handler) http.Handler
 }
 
+// NewService - Create a new query service
 func NewService() (Service, error) {
 	return &svc{
 		registered: make(map[db.IntQuery]monitoring.NamedGauge),

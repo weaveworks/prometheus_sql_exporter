@@ -1,5 +1,5 @@
 .DEFAULT: all
-.PHONY: all clean realclean deps integration build test
+.PHONY: all clean realclean deps integration build test lint
 
 HOST=quay.io
 NAMESPACE=weaveworks
@@ -25,7 +25,8 @@ realclean: clean
 build/.%.done: docker/Dockerfile.%
 	mkdir -p ./build/docker/$*
 	cp $^ ./build/docker/$*/
-	${DOCKER} build -t ${HOST}/${NAMESPACE}/$*:$(shell ./docker/image-tag) -f build/docker/$*/Dockerfile.$* ./build/docker/$*
+	${DOCKER} build -t ${HOST}/${NAMESPACE}/$* -f build/docker/$*/Dockerfile.$* ./build/docker/$*
+	${DOCKER} tag ${HOST}/${NAMESPACE}/$* ${HOST}/${NAMESPACE}/$*:$(shell ./docker/image-tag)
 	${DOCKER} images
 	touch $@
 
@@ -43,13 +44,21 @@ deps:
 
 build: build/prose
 
+PKGS := $(shell go list ./... | grep -v /vendor)
+
+$(PKGS):
+	go tool vet -all $(GOPATH)/src/$@/*.go
+	golint $(GOPATH)/src/$@/*.go
+
+lint: $(PKGS)
+
 test:
 	go test -v -race $(shell glide novendor)
 
 integration: build/.mocks.done
 	${DOCKER} run -d -p 15432:5432 --name integration-db integration-db
 	until docker logs integration-db 2>1 | grep "PostgreSQL init process complete;" ; do sleep 1 ; done
-	go test -v -race -tags integration -timeout 30s $(shell glide novendor) || { echo "Integration tests failed" >&2; if [ -z ${CI} ] ; then ${DOCKER} rm -f integration-db ; fi ; exit 1; }
+	go test -v -race -tags integration -timeout 30s $$(glide novendor) || { echo "Integration tests failed" >&2; if [ -z ${CI} ] ; then ${DOCKER} rm -f integration-db ; fi ; exit 1; }
 	if [ -z ${CI} ] ; then ${DOCKER} rm -f integration-db ; fi ;
 
 build/.mocks.done: ./mocks/Dockerfile.integration-db

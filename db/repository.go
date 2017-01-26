@@ -6,6 +6,7 @@ import (
 	"net/url"
 )
 
+// Repository - Perform queries on a db and return a metric
 type Repository interface {
 	QueryInt(q string) (int, error)
 }
@@ -14,6 +15,7 @@ type repository struct {
 	db *sql.DB
 }
 
+// NewRepository - constructor
 func NewRepository(DB *sql.DB) Repository {
 	return &repository{
 		db: DB,
@@ -28,6 +30,7 @@ func (r *repository) QueryInt(q string) (count int, err error) {
 	return
 }
 
+// NewDatabase - instantiate a DB connection from a string url
 func NewDatabase(databaseURL string) (conn *sql.DB, err error) {
 	u, err := url.Parse(databaseURL)
 	if err != nil {

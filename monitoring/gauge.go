@@ -6,6 +6,7 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
+// ProseGauge - A domain model of a prometheus gauge
 type ProseGauge interface {
 	UpdateInt(name string, i int)
 }
@@ -15,6 +16,7 @@ type gauge struct {
 	l  string
 }
 
+// ProseGaugeConfig - config
 type ProseGaugeConfig struct {
 	Namespace string
 	Subsystem string
@@ -22,6 +24,7 @@ type ProseGaugeConfig struct {
 	Label     string
 }
 
+// NewProseGauge - Create a new gauge
 func NewProseGauge(c ProseGaugeConfig) (ProseGauge, error) {
 	g := prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 		Namespace: c.Namespace,

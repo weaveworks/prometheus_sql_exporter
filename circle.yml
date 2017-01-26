@@ -18,9 +18,11 @@ dependencies:
     - "~/$CIRCLE_PROJECT_USERNAME/vendor"
   override:
     - make deps
+    - go get -u github.com/golang/lint/golint
 
 test:
-  # Add go vet and go lint.
+  pre:
+    - make lint
   override:
     - make build
     - make test

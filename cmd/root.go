@@ -26,10 +26,10 @@ const (
 )
 
 func init() {
-	RootCmd.AddCommand(VersionCmd)
-	bindLocalFlag(RootCmd, databaseSourceParam, defaultDatabaseSource, `Database source name; includes the DB driver as the scheme. The default is a temporary, file-based DB`)
-	bindLocalFlag(RootCmd, listenParam, defaultServerPort, `Listen address for API clients`)
-	bindLocalFlag(RootCmd, queriesParam, defaultQueries, `Path to yaml file which describes metrics and queries`)
+	rootCmd.AddCommand(versionCmd)
+	bindLocalFlag(rootCmd, databaseSourceParam, defaultDatabaseSource, `Database source name; includes the DB driver as the scheme. The default is a temporary, file-based DB`)
+	bindLocalFlag(rootCmd, listenParam, defaultServerPort, `Listen address for API clients`)
+	bindLocalFlag(rootCmd, queriesParam, defaultQueries, `Path to yaml file which describes metrics and queries`)
 	viper.AutomaticEnv() // read in environment variables that match
 }
 
@@ -38,7 +38,7 @@ func bindLocalFlag(c *cobra.Command, name string, value string, help string) {
 	viper.BindPFlag(name, c.Flags().Lookup(name))
 }
 
-var RootCmd = &cobra.Command{
+var rootCmd = &cobra.Command{
 	Use:   "prose",
 	Short: "Monitor a database and expose metrics for prometheus",
 	Long:  `This service will monitor a database for specified queries and expose them to prometheus`,
@@ -74,8 +74,9 @@ var RootCmd = &cobra.Command{
 	},
 }
 
+// Execute - run the root command
 func Execute() {
-	if err := RootCmd.Execute(); err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	}

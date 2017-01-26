@@ -12,20 +12,25 @@ import (
 type proseConfig struct {
 	Gauges []Gauge
 }
+
+// Gauge - a specific gauge in the configuration
 type Gauge struct {
 	monitoring.ProseGaugeConfig `yaml:",inline"`
 	Queries                     []Query
 }
 
+// Query - a specific query in the configuration
 type Query struct {
 	Name  string
 	Query string
 }
 
+// ProseConfiguration - interface to main configuration
 type ProseConfiguration interface {
 	RegisterGauges(repo db.Repository, svc querying.Service) error
 }
 
+// NewProseConfiguration - new query/gauge specification from a file
 func NewProseConfiguration(configPath string) (ProseConfiguration, error) {
 	var cfg proseConfig
 	queryBytes, err := ioutil.ReadFile(configPath)
@@ -39,6 +44,7 @@ func NewProseConfiguration(configPath string) (ProseConfiguration, error) {
 	return &cfg, err
 }
 
+// RegisterGauges - using the configuration, create new gauges and register them in the service
 func (c *proseConfig) RegisterGauges(repo db.Repository, svc querying.Service) error {
 	for _, pg := range c.Gauges {
 		gauge, err := monitoring.NewProseGauge(pg.ProseGaugeConfig)
