@@ -1,5 +1,5 @@
-hash: de645cbbcacc38431e29ef5614c73cd2cde0bc476d6825fb8571f092c80e9ac7
-updated: 2017-01-25T10:38:30.672254397Z
+hash: 40c9edd27e6b709babbc3979ca69e5dc080712cb99ce3167536e08671542abf8
+updated: 2017-02-08T12:00:28.146598511+08:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -16,6 +16,8 @@ imports:
   - metrics/prometheus
 - name: github.com/go-logfmt/logfmt
   version: d4327190ff838312623b09bfeb50d7c93c8d9c1d
+- name: github.com/go-sql-driver/mysql
+  version: a0583e0143b1624142adab07e0e97fe106d99561
 - name: github.com/go-stack/stack
   version: 100eb0c0a9c5b306ca2fb4f165df21d80ada4b82
 - name: github.com/golang/protobuf

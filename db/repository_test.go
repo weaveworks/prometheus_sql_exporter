@@ -16,6 +16,17 @@ func TestRepository_CreatePostgres(t *testing.T) {
 	// Don't expect to be able to ping it. It doesn't exist.
 }
 
+func TestRepository_CreateMysql(t *testing.T) {
+	db, err := NewDatabase("mysql://localhost")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if db == nil {
+		t.Fatal("Db is nil")
+	}
+	// Don't expect to be able to ping it. It doesn't exist.
+}
+
 func TestRepository_InvalidURL(t *testing.T) {
 	_, err := NewDatabase("bo&gus:\\lala*&^%$/")
 	if err == nil {
