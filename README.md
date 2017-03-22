@@ -6,6 +6,7 @@ The **Pro**metheus **S**QL **E**xporter (PROSE) is a tool that converts user-spe
 
 -   Create any number of Prometheus gauges
 -   Attach any number of raw SQL queries to a Prometheus gauge
+-   Support PostgreSQL and MySQL
 
 Caveats:
 
@@ -32,7 +33,7 @@ Available Commands:
 version     Output the version of prose
 
 Flags:
-    --dbsource string   Database source name; includes the DB driver as the scheme. E.g. postgres://user:password@localhost:5432/database?sslmode=disable
+    --dbsource string   Database source name; includes the DB driver as the scheme. E.g. postgres://user:password@localhost:5432/database?sslmode=disable or mysql://user:password@tcp(localhost:3306)/database?tls=skip-verify
     --listen string     Listen address for API clients (default ":80")
     --queries string    Path to yaml file which describes metrics and queries (default "queries.yaml")
 
