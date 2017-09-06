@@ -2,8 +2,6 @@ package querying
 
 import (
 	"errors"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
@@ -26,20 +24,6 @@ func TestService_DoesUpdateAll(t *testing.T) {
 
 	testSvc.UpdateAll()
 	if gauge1.i != 1 || gauge2.i != 2 {
-		t.Fatal("Gauge was not updated")
-	}
-}
-
-func TestService_DoesUpdateUponHandler(t *testing.T) {
-	gauge1 := &mockGauge{}
-	testSvc.Register(query1, gauge1)
-
-	ts := httptest.NewServer(testSvc.Handler(http.NotFoundHandler()))
-	defer ts.Close()
-
-	http.Get(ts.URL)
-
-	if gauge1.i != 1 {
 		t.Fatal("Gauge was not updated")
 	}
 }
