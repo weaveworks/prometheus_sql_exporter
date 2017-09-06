@@ -3,7 +3,6 @@ package querying
 import (
 	"github.com/weaveworks/prometheus_sql_exporter/db"
 	"github.com/weaveworks/prometheus_sql_exporter/monitoring"
-	"net/http"
 )
 
 // Service - Registers queries against gauges
@@ -11,7 +10,6 @@ import (
 type Service interface {
 	Register(q db.IntQuery, g monitoring.NamedGauge)
 	UpdateAll() error
-	Handler(h http.Handler) http.Handler
 }
 
 // NewService - Create a new query service
@@ -38,16 +36,4 @@ func (s *svc) UpdateAll() error {
 
 func (s *svc) Register(q db.IntQuery, g monitoring.NamedGauge) {
 	s.registered[q] = g
-}
-
-func (s *svc) Handler(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := s.UpdateAll()
-		if err != nil {
-			w.WriteHeader(500)
-			w.Write([]byte(err.Error()))
-			return
-		}
-		h.ServeHTTP(w, r)
-	})
 }

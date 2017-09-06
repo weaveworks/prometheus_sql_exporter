@@ -2,15 +2,18 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"github.com/weaveworks/prometheus_sql_exporter/config"
 	"github.com/weaveworks/prometheus_sql_exporter/db"
 	"github.com/weaveworks/prometheus_sql_exporter/querying"
-	"net/http"
-	"os"
 )
 
 const (
@@ -23,6 +26,8 @@ const (
 	defaultServerPort     string = ":80"
 	defaultDatabaseSource string = ""
 	defaultQueries        string = "queries.yaml"
+
+	queryInterval = 15 * time.Second
 )
 
 func init() {
@@ -57,10 +62,15 @@ var rootCmd = &cobra.Command{
 		errc := make(chan error)
 
 		var httpMiddleware http.Handler
-		{
-			httpMiddleware = promhttp.Handler()
-			httpMiddleware = qSvc.Handler(httpMiddleware)
-		}
+		httpMiddleware = promhttp.Handler()
+
+		go func() {
+			for range time.Tick(queryInterval) {
+				if err := qSvc.UpdateAll(); err != nil {
+					logger.Log("err", err.Error())
+				}
+			}
+		}()
 
 		// Start prometheus metrics endpoint
 		go func() {

@@ -16,35 +16,6 @@ import (
 	"testing"
 )
 
-func TestIntegration_ShowErrorIfCantConnect(t *testing.T) {
-	file := createTestQueryFile("fail")
-	defer os.Remove(file.Name())
-	viper.Set(databaseSourceParam, "postgres://localhost:39999")
-	viper.Set(queriesParam, pathTo(file))
-	qSvc := wireUpDomain(log.NewLogfmtLogger(os.Stderr))
-
-	var httpMiddleware http.Handler
-	{
-		httpMiddleware = promhttp.Handler()
-		httpMiddleware = qSvc.Handler(httpMiddleware)
-	}
-
-	ts := httptest.NewServer(httpMiddleware)
-	defer ts.Close()
-
-	resp, err := http.Get(ts.URL + "/metrics")
-	if err != nil {
-		t.Fatal(err)
-	}
-	res, _ := ioutil.ReadAll(resp.Body)
-	if resp.StatusCode != 500 {
-		t.Fatal("Expected 500 response code")
-	}
-	if !strings.Contains(string(res), "connection refused") {
-		t.Fatal("Expected connection refused but got", string(res))
-	}
-}
-
 // This test expects the postgres db, built from /mocks/Dockerfile.integration-db, to be running on localhost:15432
 // We use port 15432 because apparently circle already has something running on 5432
 func TestIntegration_SimpleQuery(t *testing.T) {
@@ -57,11 +28,14 @@ func TestIntegration_SimpleQuery(t *testing.T) {
 	var httpMiddleware http.Handler
 	{
 		httpMiddleware = promhttp.Handler()
-		httpMiddleware = qSvc.Handler(httpMiddleware)
 	}
 
 	ts := httptest.NewServer(httpMiddleware)
 	defer ts.Close()
+
+	if err := qSvc.UpdateAll(); err != nil {
+		t.Error(err)
+	}
 
 	resp, err := http.Get(ts.URL + "/metrics")
 	if err != nil {
