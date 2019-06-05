@@ -22,7 +22,7 @@ To use with Kubernetes, use a manifest that [looks like the provided example](./
 ### CLI Arguments
 
 ```
-$ docker run -it quay.io/weaveworks/prometheus_sql_exporter --help
+$ docker run -it weaveworks/prometheus_sql_exporter --help
 This service will monitor a database for specified queries and expose them to prometheus
 
 Usage:

@@ -1,7 +1,6 @@
 .DEFAULT: all
 .PHONY: all clean realclean deps integration build test lint
 
-HOST=quay.io
 NAMESPACE=weaveworks
 DOCKER?=docker
 
@@ -25,8 +24,8 @@ realclean: clean
 build/.%.done: docker/Dockerfile.%
 	mkdir -p ./build/docker/$*
 	cp $^ ./build/docker/$*/
-	${DOCKER} build -t ${HOST}/${NAMESPACE}/$* -f build/docker/$*/Dockerfile.$* ./build/docker/$*
-	${DOCKER} tag ${HOST}/${NAMESPACE}/$* ${HOST}/${NAMESPACE}/$*:$(shell ./docker/image-tag)
+	${DOCKER} build -t ${NAMESPACE}/$* -f build/docker/$*/Dockerfile.$* ./build/docker/$*
+	${DOCKER} tag ${NAMESPACE}/$* ${NAMESPACE}/$*:$(shell ./docker/image-tag)
 	touch $@
 
 build/.prometheus_sql_exporter.done: build/prose
@@ -46,7 +45,7 @@ build: build/prose
 PKGS := $(shell go list ./... | grep -v /vendor)
 
 $(PKGS):
-	go tool vet -all $(GOPATH)/src/$@/*.go
+	go vet -all $(GOPATH)/src/$@/*.go
 	golint $(GOPATH)/src/$@/*.go
 
 lint: $(PKGS)
